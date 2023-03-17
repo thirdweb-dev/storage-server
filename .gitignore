@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+
+# Ignore node_modules directory
+node_modules/
+
+# Ignore generated output directories
+dist/
+build/
+lib/
+out/
+.eslintcache/
+.nyc_output/
+coverage/
+test-results/
+
+# Ignore logs and cache files
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnp.*
+
+# Ignore editor configuration files
+.vscode/
+.idea/
+
+# Ignore package-lock.json or yarn.lock files
+package-lock.json
+yarn.lock
