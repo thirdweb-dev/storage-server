@@ -1,7 +1,10 @@
-export default {
+import './loadDotenv';
+import { DataSource } from 'typeorm';
+
+const dataSource = new DataSource({
   type: 'postgres',
   host: process.env.POSTGRES_HOST,
-  port: process.env.POSTGRES_PORT,
+  port: Number(process.env.POSTGRES_PORT),
   username: process.env.POSTGRES_USERNAME,
   password: process.env.POSTGRES_PASSWORD,
   database: process.env.POSTGRES_NAME,
@@ -15,10 +18,7 @@ export default {
   ],
   subscribers: [
     'src/subscribers/**/*.ts'
-  ],
-  cli: {
-    entitiesDir: 'src/entities',
-    migrationsDir: 'src/migrations',
-    subscribersDir: 'src/subscribers'
-  }
-} as any;
+  ]
+});
+
+export default dataSource
