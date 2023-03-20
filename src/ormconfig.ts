@@ -1,4 +1,4 @@
-import './loadDotenv';
+import './loadEnv';
 import { DataSource } from 'typeorm';
 
 const dataSource = new DataSource({
