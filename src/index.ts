@@ -1,5 +1,3 @@
-// require('fix-esm').register()
-
 import './loadEnv';
 import 'reflect-metadata';
 import express from 'express';
@@ -7,7 +5,6 @@ import bodyParser from 'body-parser';
 import dataSource from './ormconfig';
 import { UploadEntity } from './entities/UploadEntity';
 import multer from 'multer';
-// const { create } = require('@web3-storage/w3up-client');
 import { create } from '@web3-storage/w3up-client'
 
 const app = express();
