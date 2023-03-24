@@ -3,7 +3,7 @@ import 'reflect-metadata';
 import express from 'express';
 // import bodyParser from 'body-parser';
 import dataSource from './ormconfig';
-// import { UploadEntity } from './entities/UploadEntity';
+import { UploadEntity } from './entities/UploadEntity';
 import { Client, create } from '@web3-storage/w3up-client';
 import busboy from 'busboy'
 import stream from 'node:stream/web';
@@ -41,6 +41,9 @@ app.put('/uploads',  async (req, res) => {
     );
 
     req.setTimeout(360000000)
+
+    const entity = new UploadEntity()
+    console.log(entity)
 
     // file.on('data', (data) => {
     //   console.log(`File [${name}] got ${data.length} bytes`);
