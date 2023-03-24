@@ -16,7 +16,7 @@
     "migration:run:dev": "NODE_ENV=development ./scripts/migration-run.sh"
   },
   "dependencies": {
-    "@web3-storage/w3up-client": "^4.2.0",
+    "@web3-storage/w3up-client": "^5.0.0",
     "body-parser": "^1.20.2",
     "busboy": "^1.6.0",
     "dotenv": "^16.0.3",
