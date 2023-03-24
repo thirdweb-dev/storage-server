@@ -6,7 +6,7 @@
   "author": "Danny Friday <nessup@gmail.com>",
   "type": "module",
   "scripts": {
-    "build": "tsc -p ./tsconfig.json --outDir dist",
+    "build": "yarn && tsc -p ./tsconfig.json --outDir dist",
     "start": "node dist/index.js",
     "dev": "NODE_ENV=development nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
     "infra": "docker compose --env-file ./.env.development up",
