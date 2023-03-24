@@ -11,13 +11,13 @@ const dataSource = new DataSource({
   synchronize: false,
   logging: false,
   entities: [
-    'src/entities/**/*.ts'
+    'src/entities/**/*'
   ],
   migrations: [
-    'src/migrations/**/*.ts'
+    'src/migrations/**/*'
   ],
   subscribers: [
-    'src/subscribers/**/*.ts'
+    'src/subscribers/**/*'
   ]
 });
 
