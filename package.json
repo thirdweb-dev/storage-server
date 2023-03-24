@@ -6,8 +6,8 @@
   "author": "Danny Friday <nessup@gmail.com>",
   "type": "module",
   "scripts": {
-    "build": "yarn && tsc -p ./tsconfig.json --outDir dist && pwd && ls dist",
-    "start": "node dist/index.js",
+    "build": "yarn && tsc -p ./tsconfig.json --outDir dist",
+    "start": "node --experimental-specifier-resolution=node dist/index.js",
     "dev": "NODE_ENV=development nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
     "infra": "docker compose --env-file ./.env.development up",
     "lint": "eslint 'src/**/*.ts'",
@@ -39,5 +39,9 @@
     "nodemon": "^2.0.21",
     "ts-node": "^10.9.1",
     "typescript": "^5.0.2"
+  },
+  "volta": {
+    "node": "18.15.0",
+    "yarn": "3.5.0"
   }
 }
