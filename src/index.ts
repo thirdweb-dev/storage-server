@@ -112,7 +112,7 @@ dataSource
   .then(() => {
     const server = app.listen(port, async () => {
       client = await create()
-      // await client.authorize('danny@thirdweb.com')
+      await client.authorize('danny@thirdweb.com')
       const space = await client.createSpace('thirdweb-awesome-space')
       await client.setCurrentSpace(space.did() as `did:key:${string}`)
       try {
