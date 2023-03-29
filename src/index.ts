@@ -21,14 +21,6 @@ events.setMaxListeners(1000)
 // app.use(bodyParser.json());
 
 app.put('/uploads',  async (req, res) => {
-  // const { userId } = req.body;
-
-  // try {
-  //   await client.registerSpace('danny@thirdweb.com')
-  // } catch (err) {
-  //   console.error('registration failed: ', err)
-  // }
-
   const bb = busboy({ headers: req.headers })
 
   bb.on('file', async (name, file, info) => {
@@ -45,33 +37,11 @@ app.put('/uploads',  async (req, res) => {
     const entity = new UploadEntity()
     console.log(entity)
 
-    // file.on('data', (data) => {
-    //   console.log(`File [${name}] got ${data.length} bytes`);
-    // }).on('close', () => {
-    //   console.log(`File [${name}] done`);
-    // });
-
-    // await client.uploadFile({
-    //   // stream: () => stream.Readable.toWeb(file) as ReadableStream<any>
-    //   // stream: () => file as any as ReadableStream<any>
-    //   stream: () => new stream.ReadableStream() as ReadableStream<any>
-    // })
-    // await client.uploadFile({
-    //   stream: () => file as any
-    // })
-    // await client.uploadFile({
-    //   stream: () => stream.Readable.from(file) as any
-    // })
-
-
-
-    // const { readable, writable } = new stream.TransformStream();
-    //
-    // await nodeStream.Readable.toWeb(file).pipeTo(writable);
-
-    // const await client.uploadFile({
-    //   stream: () => readable as any,
-    // });
+    file.on('data', (data) => {
+      console.log(`File [${name}] got ${data.length} bytes`);
+    }).on('close', () => {
+      console.log(`File [${name}] done`);
+    });
 
     console.log('started uploading')
     console.time('started uploading')
@@ -80,6 +50,13 @@ app.put('/uploads',  async (req, res) => {
     });
     console.timeEnd('started uploading')
     console.log('did', did)
+
+    // // Track the upload
+    // const upload = new UploadEntity();
+    // // upload.uploaderId = userId;
+    // await upload.save();
+    //
+    // res.json(upload);
   });
   bb.on('field', (name, val, info) => {
     console.log(`Field [${name}]: value: %j`, val);
@@ -90,21 +67,6 @@ app.put('/uploads',  async (req, res) => {
     res.end();
   });
   req.pipe(bb);
-  return;
-  //
-
-  //
-  // // console.time('Upload')
-  // // const directoryCid = await client.uploadDirectory(files)
-  // // console.log('directoryCid', directoryCid)
-  // // console.timeEnd('Upload')
-  //
-  // // Track the upload
-  // const upload = new UploadEntity();
-  // // upload.uploaderId = userId;
-  // await upload.save();
-  //
-  // res.json(upload);
 });
 
 dataSource
