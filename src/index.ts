@@ -26,7 +26,7 @@ events.setMaxListeners(1000)
 
 // app.use(bodyParser.json());
 
-app.put('/uploads',  async (req, res) => {
+app.post('/uploads',  async (req, res) => {
   const bb = busboy({ headers: req.headers })
 
   bb.on('file', async (name, file, info) => {
@@ -80,7 +80,7 @@ dataSource
     const server = app.listen(port, async () => {
       const principal = Signer.parse(process.env.W3UP_KEY as string)
       const data = await AgentData.create({ principal })
-      client = new Client(data)
+      client = new Client(data as any)
 
       const proof = await parseProof(process.env.W3UP_PROOF as string)
       const space = await client.addSpace(proof)
