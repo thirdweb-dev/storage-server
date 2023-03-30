@@ -27,6 +27,8 @@
     "dotenv": "^16.0.3",
     "ed25519": "link:@ucanto/principal/ed25519",
     "express": "^4.18.2",
+    "express-async-handler": "^1.2.0",
+    "p-queue": "^7.3.4",
     "pg": "^8.10.0",
     "reflect-metadata": "^0.1.13",
     "typeorm": "^0.3.12",
