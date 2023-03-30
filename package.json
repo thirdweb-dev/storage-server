@@ -16,10 +16,16 @@
     "migration:run:dev": "NODE_ENV=development ./scripts/migration-run.sh"
   },
   "dependencies": {
-    "@web3-storage/w3up-client": "^5.0.0",
+    "@ipld/car": "^5.1.1",
+    "@ucanto/core": "^5.2.0",
+    "@ucanto/principal": "^5.1.0",
+    "@web3-storage/access": "^11.0.1",
+    "@web3-storage/w3up-client": "^5.5.0",
     "body-parser": "^1.20.2",
     "busboy": "^1.6.0",
+    "delegation": "link:@ucanto/core/delegation",
     "dotenv": "^16.0.3",
+    "ed25519": "link:@ucanto/principal/ed25519",
     "express": "^4.18.2",
     "pg": "^8.10.0",
     "reflect-metadata": "^0.1.13",

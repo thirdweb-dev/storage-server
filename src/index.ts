@@ -4,11 +4,17 @@ import express from 'express';
 // import bodyParser from 'body-parser';
 import dataSource from './ormconfig';
 import { UploadEntity } from './entities/UploadEntity';
-import { Client, create } from '@web3-storage/w3up-client';
+import { Client } from '@web3-storage/w3up-client';
 import busboy from 'busboy'
 import stream from 'node:stream/web';
 import nodeStream from 'node:stream';
 import events from 'node:events';
+import { AgentData } from '@web3-storage/access/agent'
+import * as Signer from '@ucanto/principal/ed25519'
+import { CarReader } from '@ipld/car'
+import { importDAG } from '@ucanto/core/delegation'
+import { Block } from '@ipld/car/reader';
+
 
 
 const app = express();
@@ -34,22 +40,21 @@ app.put('/uploads',  async (req, res) => {
 
     req.setTimeout(360000000)
 
-    const entity = new UploadEntity()
-    console.log(entity)
-
-    file.on('data', (data) => {
-      console.log(`File [${name}] got ${data.length} bytes`);
-    }).on('close', () => {
-      console.log(`File [${name}] done`);
-    });
+    file
+      .on('data', (data) => {
+        console.log(`File [${name}] got ${data.length} bytes`);
+        // fileData.push(data)
+      })
+      .on('close', () => {
+        console.log(`File [${name}] done`);
+      });
 
     console.log('started uploading')
     console.time('started uploading')
-    const did = await client.uploadFile({
+    const cid = await client.uploadFile({
       stream: () => nodeStream.Readable.toWeb(file) as any,
     });
     console.timeEnd('started uploading')
-    console.log('did', did)
 
     // // Track the upload
     // const upload = new UploadEntity();
@@ -73,17 +78,25 @@ dataSource
   .initialize()
   .then(() => {
     const server = app.listen(port, async () => {
-      client = await create()
-      await client.authorize('danny@thirdweb.com')
-      const space = await client.createSpace('thirdweb-awesome-space')
+      const principal = Signer.parse(process.env.W3UP_KEY as string)
+      const data = await AgentData.create({ principal })
+      client = new Client(data)
+
+      const proof = await parseProof(process.env.W3UP_PROOF as string)
+      const space = await client.addSpace(proof)
       await client.setCurrentSpace(space.did() as `did:key:${string}`)
-      try {
-        await client.registerSpace('danny@thirdweb.com')
-      } catch (err) {
-        console.error('registration failed: ', err)
-      }
 
       console.log(`Server listening on port ${port}`);
     });
     server.setTimeout(360000000)
   });
+
+/** @param {string} data Base64 encoded CAR file */
+async function parseProof (data: string) {
+  const blocks: Block[] = []
+  const reader = await CarReader.fromBytes(Buffer.from(data, 'base64'))
+  for await (const block of reader.blocks()) {
+    blocks.push(block)
+  }
+  return importDAG(blocks as any)
+}
