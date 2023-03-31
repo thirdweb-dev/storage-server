@@ -84,6 +84,10 @@ app.post('/uploads',  async (req, res) => {
       // await upload.save();
       //
       // res.json(upload);
+
+      res.json({
+        IpfsHash: cid
+      })
     })
 
     bb.on('field', (name, val, info) => {
@@ -91,7 +95,7 @@ app.post('/uploads',  async (req, res) => {
     });
     bb.on('close', () => {
       console.log('Done parsing form!');
-      res.json({ ok: true })
+      // res.json({ ok: true })
       // res.writeHead(303, { Connection: 'close', Location: '/' });
       // res.end();
     });
