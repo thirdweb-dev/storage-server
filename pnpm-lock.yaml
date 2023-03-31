@@ -4,6 +4,9 @@ dependencies:
   '@ipld/car':
     specifier: ^5.1.1
     version: 5.1.1
+  '@types/cors':
+    specifier: ^2.8.13
+    version: 2.8.13
   '@ucanto/core':
     specifier: ^5.2.0
     version: 5.2.0
@@ -22,6 +25,9 @@ dependencies:
   busboy:
     specifier: ^1.6.0
     version: 1.6.0
+  cors:
+    specifier: ^2.8.5
+    version: 2.8.5
   delegation:
     specifier: link:@ucanto/core/delegation
     version: link:@ucanto/core/delegation
@@ -438,6 +444,12 @@ packages:
     dependencies:
       '@types/node': 18.15.4
     dev: true
+
+  /@types/cors@2.8.13:
+    resolution: {integrity: sha512-RG8AStHlUiV5ysZQKq97copd2UmVYw3/pRMLefISZ3S1hK104Cwm7iLQ3fTKx+lsUH2CE8FlLaYeEA2LSeqYUA==}
+    dependencies:
+      '@types/node': 18.15.4
+    dev: false
 
   /@types/express-serve-static-core@4.17.33:
     resolution: {integrity: sha512-TPBqmR/HRYI3eC2E5hmiivIzv+bidAfXofM+sbonAGvyDhySGw9/PQZFt2BLOrjUUR++4eJVpx6KnLQK1Fk9tA==}
@@ -1174,6 +1186,14 @@ packages:
   /cookie@0.5.0:
     resolution: {integrity: sha512-YZ3GUyn/o8gfKJlnlX7g7xq4gyO6OSuhGPKaaGssGB2qgDUS0gPgtTvoyZLTt9Ab6dC4hfc9dV5arkvc/OCmrw==}
     engines: {node: '>= 0.6'}
+    dev: false
+
+  /cors@2.8.5:
+    resolution: {integrity: sha512-KIHbLJqu73RGr/hnbrO9uBeixNGuvSQjul/jdFvS/KFSIH1hWVd1ng7zOHx+YrEfInLG7q4n6GHQ9cDtxv/P6g==}
+    engines: {node: '>= 0.10'}
+    dependencies:
+      object-assign: 4.1.1
+      vary: 1.1.2
     dev: false
 
   /create-require@1.1.1:

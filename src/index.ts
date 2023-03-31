@@ -12,6 +12,7 @@ import { CarReader } from '@ipld/car'
 import { importDAG } from '@ucanto/core/delegation'
 import { Block } from '@ipld/car/reader';
 import PQueue from 'p-queue';
+import cors from 'cors'
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -19,6 +20,8 @@ const port = process.env.PORT || 3000;
 let client!: Client;
 
 events.setMaxListeners(1000)
+
+app.use(cors())
 
 // app.use(bodyParser.json());
 
@@ -81,16 +84,17 @@ app.post('/uploads',  async (req, res) => {
       // await upload.save();
       //
       // res.json(upload);
-
-      bb.on('field', (name, val, info) => {
-        console.log(`Field [${name}]: value: %j`, val);
-      });
-      bb.on('close', () => {
-        console.log('Done parsing form!');
-        res.writeHead(303, { Connection: 'close', Location: '/' });
-        res.end();
-      });
     })
+
+    bb.on('field', (name, val, info) => {
+      console.log(`Field [${name}]: value: %j`, val);
+    });
+    bb.on('close', () => {
+      console.log('Done parsing form!');
+      res.json({ ok: true })
+      // res.writeHead(303, { Connection: 'close', Location: '/' });
+      // res.end();
+    });
   });
 
   req.on("aborted", abort);
