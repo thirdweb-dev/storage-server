@@ -98,7 +98,7 @@ app.post('/uploads',  async (req, res) => {
       }
 
       const isPartOfDirectory = filePath.startsWith('files/');
-      if (isPartOfDirectory || true) {
+      if (isPartOfDirectory) {
         // If the filename variable doesn't include a filename (e.g., it's just "files/"), we need to throw an error letting the user know that they need to include a filename
         if (filePath === 'files/') {
           throw new Error(`Invalid file name: it cannot be blank. When uploading a file part of a directory, you must include a filename for each file (e.g. "files/my-file.txt")`)
