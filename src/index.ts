@@ -73,6 +73,8 @@ app.post('/uploads',  async (req, res) => {
 
   // Store data needed for directory uploads
   let directoryUploadState: any | undefined = undefined
+  const directoryUploadOptions = {}
+  const directoryUploadConf = await client.getConf(directoryUploadOptions)
 
   bb.on('file', async (_, file, info) => {
     abortOnError(async () => {
@@ -120,22 +122,26 @@ app.post('/uploads',  async (req, res) => {
         //   }
         // )
 
+        const finalFilePath = filePath.replace('files/', '')
+
         let w3sFile: FileWriter | undefined
-        file.on('data', (data: any) => {
+        file.on('data', async (data: any) => {
+          console.log('data', data.length)
           if (!directoryUploadState) {
             console.log('opening')
             const channel = UnixFS.createUploadChannel()
-            const options = {}
-            const conf = client.getConf(options)
             directoryUploadState = {
               channel,
               writer: UnixFS.createDirectoryWriter(channel),
-              result: uploadBlockStream(conf, channel.readable, options),
+              result: uploadBlockStream(directoryUploadConf, channel.readable, directoryUploadOptions),
             }
+            // console.log('created state', directoryUploadState)
           }
           if (!w3sFile) {
-            w3sFile = directoryUploadState.writer.createFile("lol/lol.txt")
+            w3sFile = directoryUploadState.writer.createFile(finalFilePath)
+            // console.log('created file writer', w3sFile)
           }
+          console.log('writing')
           w3sFile.write(data)
         })
         file
@@ -143,11 +149,12 @@ app.post('/uploads',  async (req, res) => {
             console.log(`file closed`);
             await w3sFile.close()
             if (formDone) {
-              console.log('closing directory upload')
+              console.log('closing directory upload 1')
               await directoryUploadState.writer.close()
               await directoryUploadState.channel.writer.close()
               const dataCID = await directoryUploadState.result;
               console.log('carCID', dataCID.toString())
+              directoryUploadState = undefined
               res.json({
                 IpfsHash: dataCID.toString(),
               })
@@ -178,25 +185,26 @@ app.post('/uploads',  async (req, res) => {
       // res.json(upload);
 
     })
-    bb.on('field', (name, val) => {
-      console.log(`Field [${name}]: value: %j`, val);
-    });
-    bb.on('close', async () => {
-      console.log('Done parsing form!');
+  });
+  bb.on('field', (name, val) => {
+    console.log(`Field [${name}]: value: %j`, val);
+  });
+  bb.on('close', async () => {
+    console.log('Done parsing form!');
 
-      formDone = true;
+    formDone = true;
 
-      if (directoryUploadState) {
-        console.log('closing directory upload')
-        await directoryUploadState.writer.close()
-        await directoryUploadState.channel.writer.close()
-        const dataCID = await directoryUploadState.result;
-        console.log('carCID', dataCID.toString())
-        res.json({
-          IpfsHash: dataCID.toString(),
-        })
-      }
-    });
+    if (directoryUploadState) {
+      console.log('closing directory upload 2')
+      await directoryUploadState.writer.close()
+      await directoryUploadState.channel.writer.close()
+      const dataCID = await directoryUploadState.result;
+      console.log('carCID', dataCID.toString())
+      directoryUploadState = undefined
+      res.json({
+        IpfsHash: dataCID.toString(),
+      })
+    }
   });
 
   req.on("aborted", abort);
