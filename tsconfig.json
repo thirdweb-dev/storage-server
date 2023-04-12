@@ -9,13 +9,17 @@
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true,
     "baseUrl": ".",
-    "skipLibCheck": true
+    "skipLibCheck": true,
+    "allowJs": true
   },
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
   },
-  "include": ["src"],
+  "include": [
+    "src/**/*.ts",
+    "src/**/*.js"
+  ],
   "exclude": ["node_modules"],
   "types": ["node"]
 }

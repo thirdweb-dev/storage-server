@@ -14,18 +14,18 @@ import PQueue from 'p-queue';
 import cors from 'cors'
 
 
-// This import is from a file that was not intentionally not ported to TypeScript. See w3up-client-patches/README.md.
+// This import is from a file that was intentionally not ported to TypeScript. See w3up-client-patches/README.md.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { FileWriter } from './w3up-client-patches/upload-client-unixfs';
 
-// This import is from a file that was not intentionally not ported to TypeScript. See w3up-client-patches/README.md.
+// This import is from a file that was intentionally not ported to TypeScript. See w3up-client-patches/README.md.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import { ThirdwebW3UpClient, uploadBlockStream } from './w3up-client-patches/upload-client-additions';
 
 
-// This import is from a file that was not intentionally not ported to TypeScript. See w3up-client-patches/README.md.
+// This import is from a file that was intentionally not ported to TypeScript. See w3up-client-patches/README.md.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import * as UnixFS from './w3up-client-patches/upload-client-unixfs';
@@ -89,7 +89,7 @@ app.post('/uploads',  async (req, res) => {
         }
 
         const finalFilePath = filePath.replace('files/', '')
-        let w3sFile: FileWriter | undefined
+        let w3sFile!: FileWriter
         file.on('data', async (data: any) => {
           if (!directoryUploadState) {
             const channel = UnixFS.createUploadChannel()
