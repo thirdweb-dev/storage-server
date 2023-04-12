@@ -2,7 +2,7 @@ import './loadEnv';
 import 'reflect-metadata';
 import express from 'express';
 import dataSource from './ormconfig';
-import { Client } from '@web3-storage/w3up-client';
+import { Client as W3UpClient } from '@web3-storage/w3up-client';
 import { createWriter } from '@ipld/unixfs'
 import busboy from 'busboy'
 import nodeStream from 'node:stream';
@@ -16,17 +16,29 @@ import PQueue from 'p-queue';
 import cors from 'cors'
 import * as CAR from '@web3-storage/upload-client/car'
 import { AnyLink, DirectoryEntryLink } from '@web3-storage/upload-client/dist/src/types';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { FileWriter } from './w3s-incremental-dir-upload/upload-client-unixfs';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import { ThirdwebW3UpClient, uploadBlockStream } from './w3s-incremental-dir-upload/upload-client-additions';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+import * as UnixFS from './w3s-incremental-dir-upload/upload-client-unixfs';
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-ignore
+// import { UnixFS } from './w3s-incremental-dir-upload/upload-client-unixfs';
+
+events.setMaxListeners(1000)
 
 const app = express();
 const port = process.env.PORT || 3000;
 
-let client!: Client;
+let client!: ThirdwebW3UpClient;
 
-events.setMaxListeners(1000)
-
-app.use(cors())
-
-// app.use(bodyParser.json());
+if (process.env.NODE_ENV === 'development') {
+  app.use(cors())
+}
 
 app.post('/uploads',  async (req, res) => {
   // Allow a long time for uploads
@@ -36,7 +48,6 @@ app.post('/uploads',  async (req, res) => {
   const workQueue = new PQueue({ concurrency: 1 });
 
   function abort(e: Error) {
-    console.log('aborted')
     req.unpipe(bb);
     workQueue.pause();
     if (!req.aborted) {
@@ -57,14 +68,11 @@ app.post('/uploads',  async (req, res) => {
     });
   }
 
-  // Used to track individual file entry points for a directory upload
-  const directoryEntries: DirectoryEntryLink[] = []
-
   // Track when the form is done parsing
   let formDone = false;
 
-  // Track when a directory upload has begun
-  let directoryUploadBegan = false;
+  // Store data needed for directory uploads
+  let directoryUploadState: any | undefined = undefined
 
   bb.on('file', async (_, file, info) => {
     abortOnError(async () => {
@@ -82,53 +90,73 @@ app.post('/uploads',  async (req, res) => {
           console.log(`File [${filePath}] done`);
         });
 
-      if (filePath !== 'file' && !filePath.startsWith('files/')) {
-        throw new Error(`Invalid file name: ${name}. Must be "file" for a single file upload, or "files/{name}" for a directory upload (note the 's' in "files")`)
+      // When uploading a single file, the client sends a filename of "files". A little counterintuitive, but we need to handle it
+      if (filePath !== 'files' && !filePath.startsWith('files/')) {
+        throw new Error(`Invalid file name: ${name}. Must be "files" for a single file upload, or "files/{name}" for a directory upload (note the 's' in "files")`)
       }
 
       const isPartOfDirectory = filePath.startsWith('files/');
-      if (isPartOfDirectory) {
+      if (isPartOfDirectory || true) {
         // If the filename variable doesn't include a filename (e.g., it's just "files/"), we need to throw an error letting the user know that they need to include a filename
         if (filePath === 'files/') {
           throw new Error(`Invalid file name: it cannot be blank. When uploading a file part of a directory, you must include a filename for each file (e.g. "files/my-file.txt")`)
         }
 
-        // // If the filePath includes multiple slashes (e.g., "files/my-folder/my-file.txt"), we need to throw an error letting the user know that they can only upload one file at a time
-        if (filePath.split('/').length > 2) {
-          throw new Error(`Invalid file name: ${filePath}. When uploading a file part of a directory, you can not include subdirectories. We will add support for subdirectories very soon.`)
-        }
-
-        // Remove the "files/" prefix to get the file's actual name
-        const fileName = filePath.slice('files/'.length);
-
         // Upload the individual file needed for the directory upload
-        // TODO: Work with the w3s team to eliminate the need for a directory upload. This should be a single file upload
         console.log('Starting upload of file in directory...')
-        console.time('Upload took')
-        const entries: DirectoryEntryLink[] = []
-        await client.uploadDirectory([
-          {
-            name: fileName,
-            stream: () => nodeStream.Readable.toWeb(file) as any,
+
+        // let carCID!: any
+        // const dataCID = await client.uploadWith(
+        //   async (writer: any) => {
+        //     console.log('writing')
+        //     const onetxt = writer.createFile("lol/lol.txt")
+        //     onetxt.write(new TextEncoder().encode("sdfsdfsfsd"))
+        //     await onetxt.close()
+        //   },
+        //   {
+        //     onShardStored: (meta: any) => {
+        //       carCID = meta.cid
+        //     },
+        //   }
+        // )
+
+        let w3sFile: FileWriter | undefined
+        file.on('data', (data: any) => {
+          if (!directoryUploadState) {
+            console.log('opening')
+            const channel = UnixFS.createUploadChannel()
+            const options = {}
+            const conf = client.getConf(options)
+            directoryUploadState = {
+              channel,
+              writer: UnixFS.createDirectoryWriter(channel),
+              result: uploadBlockStream(conf, channel.readable, options),
+            }
           }
-        ], { onDirectoryEntryLink: e => entries.push(e) })
+          if (!w3sFile) {
+            w3sFile = directoryUploadState.writer.createFile("lol/lol.txt")
+          }
+          w3sFile.write(data)
+        })
+        file
+          .on('close', async () => {
+            console.log(`file closed`);
+            await w3sFile.close()
+            if (formDone) {
+              console.log('closing directory upload')
+              await directoryUploadState.writer.close()
+              await directoryUploadState.channel.writer.close()
+              const dataCID = await directoryUploadState.result;
+              console.log('carCID', dataCID.toString())
+              res.json({
+                IpfsHash: dataCID.toString(),
+              })
+            }
+          });
+
         console.timeEnd('Upload took')
         // console.log('got entries', entries)
 
-        // Add the entry to the directoryEntries array
-        directoryEntries.push(entries[0])
-
-        // If the form is done parsing, we can upload the directory
-        if (formDone && directoryEntries.length && !directoryUploadBegan) {
-          console.log('Starting dir upload from file body')
-          directoryUploadBegan = true
-          const cid = await uploadDir(client, directoryEntries)
-          console.log('Directory CID =', cid.toString())
-          res.json({
-            IpfsHash: cid.toString(),
-          })
-          console.log('responded')
-        }
       } else {
         console.log('Starting upload of individual file...')
         console.time('Upload took')
@@ -140,8 +168,6 @@ app.post('/uploads',  async (req, res) => {
         res.json({
           IpfsHash: cid.toString(),
         })
-
-        console.log('CID =', cid.toString())
       }
 
       // // Track the upload
@@ -152,7 +178,7 @@ app.post('/uploads',  async (req, res) => {
       // res.json(upload);
 
     })
-    bb.on('field', (name, val, info) => {
+    bb.on('field', (name, val) => {
       console.log(`Field [${name}]: value: %j`, val);
     });
     bb.on('close', async () => {
@@ -160,19 +186,16 @@ app.post('/uploads',  async (req, res) => {
 
       formDone = true;
 
-      // If the form is done parsing, we can upload the directory
-      // if (formDone && directoryEntries.length && !directoryUploadBegan) {
-      //   console.log('Starting dir upload from handler for done parsing form')
-      //   directoryUploadBegan = true
-      //   const cid = await uploadDir(client, directoryEntries)
-      //   res.json({
-      //     IpfsHash: cid.toString(),
-      //   })
-      // }
-
-      // res.json({ ok: true })
-      // res.writeHead(303, { Connection: 'close', Location: '/' });
-      // res.end();
+      if (directoryUploadState) {
+        console.log('closing directory upload')
+        await directoryUploadState.writer.close()
+        await directoryUploadState.channel.writer.close()
+        const dataCID = await directoryUploadState.result;
+        console.log('carCID', dataCID.toString())
+        res.json({
+          IpfsHash: dataCID.toString(),
+        })
+      }
     });
   });
 
@@ -184,11 +207,11 @@ app.post('/uploads',  async (req, res) => {
 
 dataSource
   .initialize()
-  .then(() => {
+  .then(async () => {
     const server = app.listen(port, async () => {
       const principal = Signer.parse(process.env.W3UP_KEY as string)
       const data = await AgentData.create({ principal })
-      client = new Client(data as any)
+      client = new ThirdwebW3UpClient(data as any)
 
       const proof = await parseProof(process.env.W3UP_PROOF as string)
       const space = await client.addSpace(proof)
@@ -209,8 +232,7 @@ async function parseProof (data: string) {
   return importDAG(blocks as any)
 }
 
-async function uploadDir (client: Client, entries: DirectoryEntryLink[]): Promise<AnyLink> {
-  console.log('Creating directory CAR...');
+async function uploadDir (client: W3UpClient, entries: DirectoryEntryLink[]): Promise<AnyLink> {
   const { readable, writable } = new TransformStream({})
   const unixfsWriter = createWriter({ writable })
   const dirWriter = unixfsWriter.createDirectoryWriter()
@@ -218,20 +240,16 @@ async function uploadDir (client: Client, entries: DirectoryEntryLink[]): Promis
     // @ts-expect-error
     dirWriter.set(entry.name, entry)
   }
-  console.log('1')
   await dirWriter.close()
-  console.log('2')
   unixfsWriter.close()
 
   const blocks: any[] = []
   await readable.pipeTo(new WritableStream({ write: b => { blocks.push(b) } }))
-  console.log('3')
   const car = await CAR.encode(blocks)
 
   console.log('Uploading directory CAR...')
   console.time('Directory CAR upload took')
   const cid = await client.uploadCAR(car)
-  console.log('4')
   console.timeEnd('Directory CAR upload took')
 
   return cid
