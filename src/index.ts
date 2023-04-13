@@ -78,7 +78,7 @@ app.post('/uploads',  async (req, res) => {
 
       // When uploading a single file, the client sends a filename of "files". A little counterintuitive, but we need to handle it
       if (filePath !== 'files' && !filePath.startsWith('files/')) {
-        throw new Error(`Invalid file name: ${name}. Must be "files" for a single file upload, or "files/{name}" for a directory upload (note the 's' in "files")`)
+        throw new Error(`Invalid file name: ${filePath}. Must be "files" for a single file upload, or "files/{name}" for a directory upload (note the 's' in "files")`)
       }
 
       const isPartOfDirectory = filePath.startsWith('files/');
