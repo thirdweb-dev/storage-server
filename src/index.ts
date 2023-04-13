@@ -40,7 +40,7 @@ let client!: ThirdwebW3UpClient;
 
 app.use(cors())
 
-app.post('/uploads',  async (req, res) => {
+app.post('/upload',  async (req, res) => {
   // Allow a long time for uploads
   req.setTimeout(360000000)
 
