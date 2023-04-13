@@ -5,4 +5,14 @@ dotenv.config({
   path: process.env.NODE_ENV === 'development' ? path.join(path.resolve(), './.env.development') : undefined
 });
 
-export {}
+function getEnv(key: string) {
+  const value = process.env[key];
+  if (!value) {
+    throw new Error(`Missing environment variable: ${key}`);
+  }
+  return value;
+}
+
+export {
+  getEnv
+}

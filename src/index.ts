@@ -29,11 +29,12 @@ import { ThirdwebW3UpClient, uploadBlockStream } from './w3up-client-patches/upl
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
 import * as UnixFS from './w3up-client-patches/upload-client-unixfs';
+import { getEnv } from './loadEnv';
 
 events.setMaxListeners(1000)
 
 const app = express();
-const port = process.env.PORT || 3000;
+const port = Number(getEnv('PORT')) || 3000;
 
 let client!: ThirdwebW3UpClient;
 
@@ -150,10 +151,10 @@ dataSource
   });
 
 async function initW3UpClient() {
-  const principal = Signer.parse(process.env.W3UP_KEY as string)
+  const principal = Signer.parse(getEnv('W3UP_KEY') as string)
   const data = await AgentData.create({ principal })
   client = new ThirdwebW3UpClient(data as any)
-  const proof = await parseProof(process.env.W3UP_PROOF as string)
+  const proof = await parseProof(getEnv('W3UP_PROOF') as string)
   const space = await client.addSpace(proof)
   await client.setCurrentSpace(space.did() as `did:key:${string}`)
 }
