@@ -2,7 +2,10 @@ import path from 'node:path';
 import * as dotenv from 'dotenv';
 
 dotenv.config({
-  path: process.env.NODE_ENV === 'development' ? path.join(path.resolve(), './.env.development') : undefined
+  path:
+    process.env.NODE_ENV === 'development'
+      ? path.join(path.resolve(), './.env.development')
+      : undefined,
 });
 
 function getEnv(key: string) {
@@ -13,6 +16,4 @@ function getEnv(key: string) {
   return value;
 }
 
-export {
-  getEnv
-}
+export { getEnv };

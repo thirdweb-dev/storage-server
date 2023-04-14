@@ -1,16 +1,23 @@
-import { BaseEntity, Entity, PrimaryGeneratedColumn, Column, CreateDateColumn, UpdateDateColumn } from "typeorm";
+import {
+  BaseEntity,
+  Entity,
+  PrimaryGeneratedColumn,
+  Column,
+  CreateDateColumn,
+  UpdateDateColumn,
+} from 'typeorm';
 
 @Entity('upload')
 export class UploadEntity extends BaseEntity {
-    @PrimaryGeneratedColumn('uuid')
-    id!: string;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
-    @CreateDateColumn()
-    createdAt!: Date;
+  @CreateDateColumn()
+  createdAt!: Date;
 
-    @UpdateDateColumn()
-    updatedAt!: Date;
+  @UpdateDateColumn()
+  updatedAt!: Date;
 
-    @Column()
-    uploaderId!: string;
+  @Column()
+  uploaderId!: string;
 }
