@@ -29,3 +29,5 @@ yarn-error.log*
 # Ignore package-lock.json or yarn.lock files
 package-lock.json
 yarn.lock
+
+.eslintcache
