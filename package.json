@@ -14,7 +14,7 @@
     "lint:fix": "eslint --fix 'src/**/*.ts'",
     "migration:generate": "NODE_ENV=development ./scripts/migration-generate.sh",
     "migration:run:dev": "NODE_ENV=development ./scripts/migration-run.sh",
-    "prettier": "prettier --write 'src/**/*.ts'"
+    "prepare": "husky install"
   },
   "dependencies": {
     "@ipld/car": "^5.1.1",
@@ -60,5 +60,9 @@
   "volta": {
     "node": "18.15.0",
     "yarn": "1.22.19"
+  },
+  "lint-staged": {
+    "*.{js,ts}": "eslint --cache --fix",
+    "*.{js,ts,md}": "prettier --write"
   }
 }
