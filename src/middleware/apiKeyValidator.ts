@@ -4,6 +4,9 @@ import { getEnv } from '../loadEnv';
 
 interface ValidationResponse {
   usable: boolean;
+  error?: {
+    message: string;
+  };
 }
 
 const apiKeyValidator = async (
@@ -24,9 +27,12 @@ const apiKeyValidator = async (
     if (response.data.usable) {
       next();
     } else {
-      res.status(403).json({ message: 'Invalid API key.' });
+      res
+        .status(403)
+        .json({ message: response.data.error?.message ?? 'Invalid API key.' });
     }
   } catch (error: any) {
+    // TODO: Add alerting here
     console.error(`Error while validating API key: ${error.message}`);
     console.error(
       'The client will be permitted to continue. This is a big problem. Please fix the error.'
