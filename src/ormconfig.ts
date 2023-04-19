@@ -10,9 +10,9 @@ const dataSource = new DataSource({
   database: process.env.POSTGRES_DB,
   synchronize: false,
   logging: false,
-  entities: ['./entities/**/*'],
-  migrations: ['./migrations/**/*'],
-  subscribers: ['./subscribers/**/*'],
+  entities: ['entities/**/*.{ts,js}'],
+  migrations: ['migrations/**/*.{ts,js}'],
+  subscribers: ['subscribers/**/*.{ts,js}'],
 });
 
 export default dataSource;

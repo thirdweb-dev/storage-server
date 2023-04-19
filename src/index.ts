@@ -31,6 +31,7 @@ import {
 // @ts-ignore
 import * as UnixFS from './w3up-client-patches/upload-client-unixfs';
 import { getEnv } from './loadEnv';
+import apiKeyValidator from './middleware/apiKeyValidator';
 
 events.setMaxListeners(1000);
 
@@ -41,7 +42,7 @@ let client!: ThirdwebW3UpClient;
 
 app.use(cors());
 
-app.post('/ipfs/upload', async (req, res) => {
+app.post('/ipfs/upload', apiKeyValidator, async (req, res) => {
   // Allow a long time for uploads
   req.setTimeout(360000000);
 
