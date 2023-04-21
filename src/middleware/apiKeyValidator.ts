@@ -38,7 +38,7 @@ export const apiKeyValidator = () => {
       // TODO: Add alerting here
       console.error(`Error while validating API key: ${error.message}`);
       console.error(
-        'The client will be permitted to continue. This is a big problem. Please fix the error.'
+        'The API verification server may be down. The client will be permitted to continue.'
       );
       next();
     }
