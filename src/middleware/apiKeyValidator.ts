@@ -25,7 +25,7 @@ export const apiKeyValidator = () => {
     }
     try {
       const response: AxiosResponse<ValidationResponse> = await axios.post(
-        `${getEnv('THIRDWEB_API_URL')}/api/keys/use`
+        `${getEnv('THIRDWEB_API_ORIGIN')}/v1/keys/use`
       );
       if (response.data.error) {
         res
