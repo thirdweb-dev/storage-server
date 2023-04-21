@@ -41,6 +41,7 @@ const port = Number(getEnv('PORT')) || 3000;
 let client!: ThirdwebW3UpClient;
 
 app.use(cors());
+app.use(apiKeyValidator());
 
 app.post('/ipfs/upload', apiKeyValidator, async (req, res) => {
   // Allow a long time for uploads
