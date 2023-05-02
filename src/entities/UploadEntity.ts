@@ -19,5 +19,11 @@ export class UploadEntity extends BaseEntity {
   updatedAt!: Date;
 
   @Column()
-  uploaderId!: string;
+  apiKey!: string;
+
+  @Column()
+  isDirectory!: boolean;
+
+  @Column()
+  cid!: string;
 }

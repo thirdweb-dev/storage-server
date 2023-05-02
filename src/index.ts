@@ -32,6 +32,8 @@ import {
 import * as UnixFS from './w3up-client-patches/upload-client-unixfs';
 import { getEnv } from './loadEnv';
 import apiKeyValidator from './middleware/apiKeyValidator';
+import { UploadEntity } from './entities/UploadEntity';
+import { AnyLink } from '@web3-storage/upload-client/dist/src/types';
 
 events.setMaxListeners(1000);
 
@@ -43,7 +45,19 @@ let client!: ThirdwebW3UpClient;
 app.use(cors());
 app.use(apiKeyValidator());
 
-app.post('/ipfs/upload', apiKeyValidator, async (req, res) => {
+async function trackUpload(args: {
+  apiKey: string;
+  isDirectory: boolean;
+  cid: AnyLink;
+}) {
+  const upload = new UploadEntity();
+  upload.apiKey = args.apiKey;
+  upload.isDirectory = args.isDirectory;
+  upload.cid = args.cid.toString();
+  await dataSource.manager.save(upload);
+}
+
+app.post('/ipfs/upload', async (req, res) => {
   // Allow a long time for uploads
   req.setTimeout(360000000);
 
@@ -75,6 +89,8 @@ app.post('/ipfs/upload', apiKeyValidator, async (req, res) => {
   let directoryUploadState: any | undefined = undefined;
   const directoryUploadOptions = {};
   const directoryUploadConf = await client.getConf(directoryUploadOptions);
+
+  const apiKey = req.get('x-api-key') as string;
 
   bb.on('file', async (_, file, info) => {
     abortOnError(async () => {
@@ -124,6 +140,11 @@ app.post('/ipfs/upload', apiKeyValidator, async (req, res) => {
         const cid = await client.uploadFile({
           stream: () => nodeStream.Readable.toWeb(file) as any,
         });
+        await trackUpload({
+          cid,
+          apiKey: req.headers['x-api-key'] as string,
+          isDirectory: false,
+        });
         res.json({
           IpfsHash: cid.toString(),
         });
@@ -136,11 +157,15 @@ app.post('/ipfs/upload', apiKeyValidator, async (req, res) => {
       await directoryUploadState.channel.writer.close();
       const dataCID = await directoryUploadState.result;
       directoryUploadState = undefined;
+      await trackUpload({
+        cid: dataCID,
+        apiKey,
+        isDirectory: true,
+      });
       res.json({
         IpfsHash: dataCID.toString(),
       });
     }
-    // TODO: Track the upload in the DB
   });
 
   req.on('aborted', abort);
