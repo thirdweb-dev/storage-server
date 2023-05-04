@@ -58,123 +58,128 @@ async function trackUpload(args: {
 }
 
 app.post('/ipfs/upload', async (req, res) => {
-  // Allow a long time for uploads
-  req.setTimeout(360000000);
+  try {
+    // Allow a long time for uploads
+    req.setTimeout(360000000);
 
-  console.log('Starting upload...');
-  console.log(req.url, req.headers, req.ip, req.method, req.body);
+    console.log('Starting upload...');
+    console.log(req.url, req.headers, req.ip, req.method, req.body);
 
-  const bb = busboy({ headers: req.headers, preservePath: true });
-  const workQueue = new PQueue({ concurrency: 1 });
+    const bb = busboy({ headers: req.headers, preservePath: true });
+    const workQueue = new PQueue({ concurrency: 1 });
 
-  function abort(e: Error) {
-    req.unpipe(bb);
-    workQueue.pause();
-    if (!req.aborted) {
-      res.set('Connection', 'close');
-      // TODO: Surface user errors as Bad Request, all other errors as Internal Server Error
-      res.status(500).send(e.message);
+    function abort(e: Error) {
+      req.unpipe(bb);
+      workQueue.pause();
+      if (!req.aborted) {
+        res.set('Connection', 'close');
+        // TODO: Surface user errors as Bad Request, all other errors as Internal Server Error
+        res.status(500).send(e.message);
+      }
     }
-  }
 
-  async function abortOnError(fn: any) {
-    workQueue.add(async () => {
-      try {
-        await fn();
-      } catch (e: any) {
-        console.error(e);
-        abort(e);
-      }
-    });
-  }
+    async function abortOnError(fn: any) {
+      workQueue.add(async () => {
+        try {
+          await fn();
+        } catch (e: any) {
+          console.error(e);
+          abort(e);
+        }
+      });
+    }
 
-  // Store state data needed for directory uploads
-  let directoryUploadState: any | undefined = undefined;
-  const directoryUploadOptions = {};
-  const directoryUploadConf = await client.getConf(directoryUploadOptions);
+    // Store state data needed for directory uploads
+    let directoryUploadState: any | undefined = undefined;
+    const directoryUploadOptions = {};
+    const directoryUploadConf = await client.getConf(directoryUploadOptions);
 
-  const apiKey = req.get('x-api-key') as string;
+    const apiKey = req.get('x-api-key') as string;
 
-  bb.on('file', async (_, file, info) => {
-    abortOnError(async () => {
-      const { filename: filePath } = info;
+    bb.on('file', async (_, file, info) => {
+      abortOnError(async () => {
+        const { filename: filePath } = info;
 
-      // When uploading a single file, the client sends a filename of "files". A little counterintuitive, but we need to handle it
-      if (filePath !== 'files' && !filePath.startsWith('files/')) {
-        throw new Error(
-          `Invalid file name: ${filePath}. Must be "files" for a single file upload, or "files/{name}" for a directory upload (note the 's' in "files")`
-        );
-      }
-
-      const isPartOfDirectory = filePath.startsWith('files/');
-      if (isPartOfDirectory) {
-        // If the filename variable doesn't include a filename (e.g., it's just "files/"), we need to throw an error letting the user know that they need to include a filename
-        if (filePath === 'files/') {
+        // When uploading a single file, the client sends a filename of "files". A little counterintuitive, but we need to handle it
+        if (filePath !== 'files' && !filePath.startsWith('files/')) {
           throw new Error(
-            `Invalid file name: it cannot be blank. When uploading a file part of a directory, you must include a filename for each file (e.g. "files/my-file.txt")`
+            `Invalid file name: ${filePath}. Must be "files" for a single file upload, or "files/{name}" for a directory upload (note the 's' in "files")`
           );
         }
 
-        const finalFilePath = filePath.replace('files/', '');
-        let w3sFile!: FileWriter;
-        file.on('data', async (data: any) => {
-          if (!directoryUploadState) {
-            const channel = UnixFS.createUploadChannel();
-            directoryUploadState = {
-              channel,
-              writer: UnixFS.createDirectoryWriter(channel),
-              result: uploadBlockStream(
-                directoryUploadConf,
-                channel.readable,
-                directoryUploadOptions
-              ),
-            };
+        const isPartOfDirectory = filePath.startsWith('files/');
+        if (isPartOfDirectory) {
+          // If the filename variable doesn't include a filename (e.g., it's just "files/"), we need to throw an error letting the user know that they need to include a filename
+          if (filePath === 'files/') {
+            throw new Error(
+              `Invalid file name: it cannot be blank. When uploading a file part of a directory, you must include a filename for each file (e.g. "files/my-file.txt")`
+            );
           }
-          if (!w3sFile) {
-            w3sFile = directoryUploadState.writer.createFile(finalFilePath);
-          }
-          w3sFile.write(data);
-        });
 
-        file.on('close', async () => {
-          await w3sFile.close();
-        });
-      } else {
-        const cid = await client.uploadFile({
-          stream: () => nodeStream.Readable.toWeb(file) as any,
-        });
+          const finalFilePath = filePath.replace('files/', '');
+          let w3sFile!: FileWriter;
+          file.on('data', async (data: any) => {
+            if (!directoryUploadState) {
+              const channel = UnixFS.createUploadChannel();
+              directoryUploadState = {
+                channel,
+                writer: UnixFS.createDirectoryWriter(channel),
+                result: uploadBlockStream(
+                  directoryUploadConf,
+                  channel.readable,
+                  directoryUploadOptions
+                ),
+              };
+            }
+            if (!w3sFile) {
+              w3sFile = directoryUploadState.writer.createFile(finalFilePath);
+            }
+            w3sFile.write(data);
+          });
+
+          file.on('close', async () => {
+            await w3sFile.close();
+          });
+        } else {
+          const cid = await client.uploadFile({
+            stream: () => nodeStream.Readable.toWeb(file) as any,
+          });
+          await trackUpload({
+            cid,
+            apiKey: req.headers['x-api-key'] as string,
+            isDirectory: false,
+          });
+          res.json({
+            IpfsHash: cid.toString(),
+          });
+        }
+      });
+    });
+    bb.on('close', async () => {
+      if (directoryUploadState) {
+        await directoryUploadState.writer.close();
+        await directoryUploadState.channel.writer.close();
+        const dataCID = await directoryUploadState.result;
+        directoryUploadState = undefined;
         await trackUpload({
-          cid,
-          apiKey: req.headers['x-api-key'] as string,
-          isDirectory: false,
+          cid: dataCID,
+          apiKey,
+          isDirectory: true,
         });
         res.json({
-          IpfsHash: cid.toString(),
+          IpfsHash: dataCID.toString(),
         });
       }
     });
-  });
-  bb.on('close', async () => {
-    if (directoryUploadState) {
-      await directoryUploadState.writer.close();
-      await directoryUploadState.channel.writer.close();
-      const dataCID = await directoryUploadState.result;
-      directoryUploadState = undefined;
-      await trackUpload({
-        cid: dataCID,
-        apiKey,
-        isDirectory: true,
-      });
-      res.json({
-        IpfsHash: dataCID.toString(),
-      });
-    }
-  });
 
-  req.on('aborted', abort);
-  bb.on('error', abort);
+    req.on('aborted', abort);
+    bb.on('error', abort);
 
-  req.pipe(bb);
+    req.pipe(bb);
+  } catch (e) {
+    // Don't let the error crash the server. Just log it and move on
+    console.error(e);
+  }
 });
 
 dataSource.initialize().then(async () => {
