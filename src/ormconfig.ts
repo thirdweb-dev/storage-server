@@ -1,6 +1,11 @@
 import './loadEnv';
 import { DataSource } from 'typeorm';
 
+// TypeORM has a weird thing where
+// if (process.env.NODE_ENV === 'development') {
+//
+// }
+
 const dataSource = new DataSource({
   type: 'postgres',
   host: process.env.POSTGRES_HOST,
@@ -10,9 +15,9 @@ const dataSource = new DataSource({
   database: process.env.POSTGRES_DB,
   synchronize: false,
   logging: false,
-  entities: ['entities/**/*'],
-  migrations: ['migrations/**/*'],
-  subscribers: ['subscribers/**/*'],
+  entities: ['entities/**/*{.ts,.js}'],
+  migrations: ['migrations/**/*{.ts,.js}'],
+  subscribers: ['subscribers/**/*{.ts,.js}'],
 });
 
 export default dataSource;
