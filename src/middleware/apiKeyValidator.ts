@@ -28,6 +28,9 @@ export const apiKeyValidator = () => {
             'Content-Type': 'application/json',
             'x-api-key': key,
           },
+          validateStatus: function (status) {
+            return status < 500; // Resolve only if the status code is less than 500
+          },
         }
       );
       if (response.data.error) {
