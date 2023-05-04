@@ -18,14 +18,17 @@ export const apiKeyValidator = () => {
     res: Response,
     next: NextFunction
   ): Promise<void> => {
-    const key = req.get('x-api-key') || 'abcdefg';
-    if (!key) {
-      res.status(400).json({ message: 'Please provide x-api-key.' });
-      return;
-    }
+    const key = req.get('x-api-key');
     try {
       const response: AxiosResponse<ValidationResponse> = await axios.post(
-        `${getEnv('THIRDWEB_API_ORIGIN')}/v1/keys/use`
+        `${getEnv('THIRDWEB_API_ORIGIN')}/v1/keys/use`,
+        {},
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': key,
+          },
+        }
       );
       if (response.data.error) {
         res
