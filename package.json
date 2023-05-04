@@ -14,6 +14,7 @@
     "lint:fix": "eslint --fix 'src/**/*.ts'",
     "migration:generate": "NODE_ENV=development ./scripts/migration-generate.sh",
     "migration:run:dev": "NODE_ENV=development ./scripts/migration-run.sh",
+    "migration:run:prod": "NODE_ENV=production ./scripts/migration-run.sh",
     "prepare": "husky install"
   },
   "dependencies": {
