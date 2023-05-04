@@ -61,6 +61,9 @@ app.post('/ipfs/upload', async (req, res) => {
   // Allow a long time for uploads
   req.setTimeout(360000000);
 
+  console.log('Starting upload...', req);
+  console.dir(req, { depth: null, colors: true });
+
   const bb = busboy({ headers: req.headers, preservePath: true });
   const workQueue = new PQueue({ concurrency: 1 });
 
