@@ -50,7 +50,6 @@ async function trackUpload(args: {
   isDirectory: boolean;
   cid: AnyLink;
 }) {
-  console.log('about to track');
   const upload = new UploadEntity();
   upload.apiKey = args.apiKey;
   upload.isDirectory = args.isDirectory;
