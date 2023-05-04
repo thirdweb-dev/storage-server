@@ -1,11 +1,10 @@
 import path from 'node:path';
 import * as dotenv from 'dotenv';
 
+const envPath = path.join(path.resolve(), `./.env.${process.env.NODE_ENV}`);
+
 dotenv.config({
-  path:
-    process.env.NODE_ENV === 'development'
-      ? path.join(path.resolve(), './.env.development')
-      : undefined,
+  path: envPath,
 });
 
 function getEnv(key: string) {
