@@ -1,10 +1,9 @@
 import './loadEnv';
 import { DataSource } from 'typeorm';
 
-// TypeORM has a weird thing where
-// if (process.env.NODE_ENV === 'development') {
-//
-// }
+// Based on the environment, TypeORM paths are different.
+const typeOrmPathPrefix =
+  process.env.NODE_ENV === 'development' ? 'src' : 'dist';
 
 const dataSource = new DataSource({
   type: 'postgres',
@@ -15,9 +14,9 @@ const dataSource = new DataSource({
   database: process.env.POSTGRES_DB,
   synchronize: false,
   logging: false,
-  entities: ['entities/**/*{.ts,.js}'],
-  migrations: ['migrations/**/*{.ts,.js}'],
-  subscribers: ['subscribers/**/*{.ts,.js}'],
+  entities: [`${typeOrmPathPrefix}/entities/**/*{.ts,.js}`],
+  migrations: [`${typeOrmPathPrefix}/migrations/**/*{.ts,.js}`],
+  subscribers: [`${typeOrmPathPrefix}/subscribers/**/*{.ts,.js}`],
 });
 
 export default dataSource;
