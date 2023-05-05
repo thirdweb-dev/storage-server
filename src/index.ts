@@ -176,13 +176,12 @@ app.post('/ipfs/upload', async (req, res) => {
     bb.on('error', abort);
 
     req.pipe(bb);
-  } catch (e) {
+  } catch (e: any) {
     // Don't let the error crash the server. Just log it and move on
     console.error(e);
     res.status(500).send({
       error: {
-        message:
-          "Couldn't upload file due to an internal error. Please try again later, or let us know on Discord.",
+        message: `Couldn't upload file due to an internal error. Please try again later, or let us know on Discord. Reason: ${e.message}`,
         statusCode: 500,
         code: 'INTERNAL_SERVER_ERROR',
       },
