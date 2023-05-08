@@ -24,7 +24,7 @@ export const apiKeyValidator = () => {
         `${getEnv('THIRDWEB_API_ORIGIN')}/v1/keys/use`,
         {
           body: JSON.stringify({
-            scope: 'storage/upload',
+            scope: 'storage.upload',
           }),
         },
         {
