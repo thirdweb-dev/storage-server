@@ -22,7 +22,11 @@ export const apiKeyValidator = () => {
     try {
       const response: AxiosResponse<ValidationResponse> = await axios.post(
         `${getEnv('THIRDWEB_API_ORIGIN')}/v1/keys/use`,
-        {},
+        {
+          body: JSON.stringify({
+            scope: 'storage/upload',
+          }),
+        },
         {
           headers: {
             'Content-Type': 'application/json',
