@@ -42,7 +42,11 @@ const port = Number(getEnv('PORT')) || 3000;
 
 let client!: ThirdwebW3UpClient;
 
-app.use(cors());
+app.use(
+  cors({
+    origin: false,
+  })
+);
 app.use(apiKeyValidator());
 
 async function trackUpload(args: {
