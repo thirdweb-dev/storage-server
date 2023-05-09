@@ -44,7 +44,7 @@ let client!: ThirdwebW3UpClient;
 
 app.use(
   cors({
-    origin: false,
+    origin: true,
   })
 );
 app.use(apiKeyValidator());
@@ -153,7 +153,7 @@ app.post('/ipfs/upload', async (req, res) => {
             apiKey: req.headers['x-api-key'] as string,
             isDirectory: false,
           });
-          res.json({
+          res.status(200).json({
             IpfsHash: cid.toString(),
           });
         }
@@ -170,7 +170,7 @@ app.post('/ipfs/upload', async (req, res) => {
           apiKey,
           isDirectory: true,
         });
-        res.json({
+        res.status(200).json({
           IpfsHash: dataCID.toString(),
         });
       }
