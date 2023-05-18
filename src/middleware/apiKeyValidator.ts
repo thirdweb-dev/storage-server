@@ -20,7 +20,6 @@ export const apiKeyValidator = () => {
   ): Promise<void> => {
     const key = req.get('x-api-key');
     const thirdwebRequest = req as ThirdwebRequest;
-    console.log(`${getEnv('THIRDWEB_API_ORIGIN')}/v1/keys/use`, key);
     try {
       const response: AxiosResponse<ValidationResponse> = await axios.post(
         `${getEnv('THIRDWEB_API_ORIGIN')}/v1/keys/use`,
