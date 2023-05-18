@@ -18,11 +18,11 @@ export class UploadEntity extends BaseEntity {
   @UpdateDateColumn()
   updatedAt!: Date;
 
-  @Column()
-  apiKey!: string;
-
-  @Column()
-  isDirectory!: boolean;
+  @Column({
+    type: 'varchar',
+    nullable: true,
+  })
+  apiKeyCreatorWalletAddress!: string | null;
 
   @Column()
   cid!: string;

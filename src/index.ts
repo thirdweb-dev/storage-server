@@ -34,6 +34,7 @@ import { getEnv } from './loadEnv';
 import apiKeyValidator from './middleware/apiKeyValidator';
 import { UploadEntity } from './entities/UploadEntity';
 import { AnyLink } from '@web3-storage/upload-client/dist/src/types';
+import { thirdwebContext, ThirdwebRequest } from './middleware/context';
 
 events.setMaxListeners(1000);
 
@@ -47,17 +48,18 @@ app.use(
     origin: true,
   })
 );
+
+app.use(thirdwebContext());
+
 app.use(apiKeyValidator());
 
 async function trackUpload(args: {
-  apiKey: string;
-  isDirectory: boolean;
   cid: AnyLink;
+  apiKeyCreatorWalletAddress: string | null;
 }) {
   const upload = new UploadEntity();
-  upload.apiKey = args.apiKey;
-  upload.isDirectory = args.isDirectory;
   upload.cid = args.cid.toString();
+  upload.apiKeyCreatorWalletAddress = args.apiKeyCreatorWalletAddress;
   await dataSource.manager.save(upload);
 }
 
@@ -98,7 +100,9 @@ app.post('/ipfs/upload', async (req, res) => {
     const directoryUploadOptions = {};
     const directoryUploadConf = await client.getConf(directoryUploadOptions);
 
-    const apiKey = req.get('x-api-key') as string;
+    const thirdwebRequest = req as ThirdwebRequest;
+    const apiKeyCreatorWalletAddress =
+      thirdwebRequest.context.apiKeyCreatorWalletAddress ?? null;
 
     bb.on('file', async (_, file, info) => {
       abortOnError(async () => {
@@ -138,6 +142,7 @@ app.post('/ipfs/upload', async (req, res) => {
             if (!w3sFile) {
               w3sFile = directoryUploadState.writer.createFile(finalFilePath);
             }
+
             w3sFile.write(data);
           });
 
@@ -150,8 +155,7 @@ app.post('/ipfs/upload', async (req, res) => {
           });
           await trackUpload({
             cid,
-            apiKey: req.headers['x-api-key'] as string,
-            isDirectory: false,
+            apiKeyCreatorWalletAddress,
           });
           res.status(200).json({
             IpfsHash: cid.toString(),
@@ -167,8 +171,7 @@ app.post('/ipfs/upload', async (req, res) => {
         directoryUploadState = undefined;
         await trackUpload({
           cid: dataCID,
-          apiKey,
-          isDirectory: true,
+          apiKeyCreatorWalletAddress,
         });
         res.status(200).json({
           IpfsHash: dataCID.toString(),

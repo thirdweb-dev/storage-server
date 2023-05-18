@@ -5,6 +5,7 @@ const envPath = path.join(path.resolve(), `./.env.${process.env.NODE_ENV}`);
 
 dotenv.config({
   path: envPath,
+  debug: true,
 });
 
 function getEnv(key: string) {
