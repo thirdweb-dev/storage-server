@@ -6,6 +6,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { CREATOR_WALLET_ADDRESS_WHILE_ORIGINAL_CREATOR_IS_UNKNOWN } from '../constants/apiKeys';
 
 @Entity('upload')
 export class UploadEntity extends BaseEntity {
@@ -18,7 +19,9 @@ export class UploadEntity extends BaseEntity {
   @UpdateDateColumn()
   updatedAt!: Date;
 
-  @Column()
+  @Column({
+    default: CREATOR_WALLET_ADDRESS_WHILE_ORIGINAL_CREATOR_IS_UNKNOWN,
+  })
   apiKeyCreatorWalletAddress!: string;
 
   @Column()

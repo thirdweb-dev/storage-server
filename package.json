@@ -6,15 +6,18 @@
   "author": "Danny Friday <nessup@gmail.com>",
   "type": "module",
   "scripts": {
-    "build": "yarn && rimraf dist && tsc -p ./tsconfig.json --outDir dist",
+    "build": "yarn && rm -rf dist && tsc -p ./tsconfig.json --outDir dist",
     "start": "node --experimental-specifier-resolution=node dist/index.js",
     "dev": "NODE_ENV=development nodemon --watch 'src/**/*.ts' --exec 'ts-node' src/index.ts",
     "infra": "docker compose --env-file ./.env.development up",
     "lint": "eslint 'src/**/*.ts'",
     "lint:fix": "eslint --fix 'src/**/*.ts'",
+    "prettier:fix": "prettier --write",
     "migration:generate": "NODE_ENV=development ./scripts/migration-generate.sh",
     "migration:run:dev": "NODE_ENV=development ./scripts/migration-run.sh",
     "migration:run:prod": "NODE_ENV=production ./scripts/migration-run.sh",
+    "migration:revert:dev": "NODE_ENV=development ./scripts/migration-revert.sh",
+    "migration:revert:prod": "NODE_ENV=production ./scripts/migration-revert.sh",
     "prepare": "husky install"
   },
   "dependencies": {
@@ -67,6 +70,6 @@
   },
   "lint-staged": {
     "*.{js,ts}": "eslint --cache --fix",
-    "*.{js,ts,md}": "prettier --write"
+    "*.{js,ts,md}": "npx prettier --write"
   }
 }
