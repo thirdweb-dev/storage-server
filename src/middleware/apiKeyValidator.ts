@@ -2,8 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import axios, { AxiosResponse } from 'axios';
 import { getEnv } from '../loadEnv';
 import { ThirdwebRequest } from './context';
-
-const CREATOR_WALLET_ADDRESS_WHILE_API_SERVER_IS_DOWN = '0x0';
+import { CREATOR_WALLET_ADDRESS_WHILE_API_SERVER_IS_DOWN } from '../constants/apiKeys';
 
 interface ValidationResponse {
   authorized: boolean;

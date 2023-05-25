@@ -55,7 +55,7 @@ app.use(apiKeyValidator());
 
 async function trackUpload(args: {
   cid: AnyLink;
-  apiKeyCreatorWalletAddress: string | null;
+  apiKeyCreatorWalletAddress: string;
 }) {
   const upload = new UploadEntity();
   upload.cid = args.cid.toString();
@@ -102,7 +102,7 @@ app.post('/ipfs/upload', async (req, res) => {
 
     const thirdwebRequest = req as ThirdwebRequest;
     const apiKeyCreatorWalletAddress =
-      thirdwebRequest.context.apiKeyCreatorWalletAddress ?? null;
+      thirdwebRequest.context.apiKeyCreatorWalletAddress;
 
     bb.on('file', async (_, file, info) => {
       abortOnError(async () => {
