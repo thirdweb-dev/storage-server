@@ -3,6 +3,8 @@ import axios, { AxiosResponse } from 'axios';
 import { getEnv } from '../loadEnv';
 import { ThirdwebRequest } from './context';
 
+const CREATOR_WALLET_ADDRESS_WHILE_API_SERVER_IS_DOWN = '0x0';
+
 interface ValidationResponse {
   authorized: boolean;
   apiKeyCreatorWalletAddress: string;
@@ -43,6 +45,9 @@ export const apiKeyValidator = () => {
         response.data.apiKeyCreatorWalletAddress;
       next();
     } catch (error: any) {
+      thirdwebRequest.context.apiKeyCreatorWalletAddress =
+        CREATOR_WALLET_ADDRESS_WHILE_API_SERVER_IS_DOWN;
+
       // TODO: Add alerting here
       console.error(`Error while validating API key: ${error}`);
       console.error(
