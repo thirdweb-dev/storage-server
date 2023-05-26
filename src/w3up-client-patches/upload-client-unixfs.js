@@ -1,21 +1,19 @@
-import * as UnixFS from '@ipld/unixfs'
+import * as UnixFS from '@ipld/unixfs';
 // import { TransformStream } from 'web-streams-polyfill';
-import * as raw from 'multiformats/codecs/raw'
-import { withMaxChunkSize } from '@ipld/unixfs/file/chunker/fixed'
-import { withWidth } from '@ipld/unixfs/file/layout/balanced'
-import {
-  TransformStream,
-} from 'node:stream/web';
+import * as raw from 'multiformats/codecs/raw';
+import { withMaxChunkSize } from '@ipld/unixfs/file/chunker/fixed';
+import { withWidth } from '@ipld/unixfs/file/layout/balanced';
+import { TransformStream } from 'node:stream/web';
 
-const SHARD_THRESHOLD = 1000 // shard directory after > 1,000 items
-const queuingStrategy = UnixFS.withCapacity()
+const SHARD_THRESHOLD = 1000; // shard directory after > 1,000 items
+const queuingStrategy = UnixFS.withCapacity();
 
 const settings = UnixFS.configure({
   fileChunkEncoder: raw,
   smallFileEncoder: raw,
   chunker: withMaxChunkSize(1024 * 1024),
   fileLayout: withWidth(1024),
-})
+});
 
 /**
  * @typedef {{
@@ -33,16 +31,16 @@ const settings = UnixFS.configure({
  * @returns {UploadChannel}
  */
 export const createUploadChannel = (strategy = queuingStrategy) => {
-  const { readable, writable } = new TransformStream({}, strategy)
-  const writer = UnixFS.createWriter({ writable, settings })
-  return { readable, writable, writer }
-}
+  const { readable, writable } = new TransformStream({}, strategy);
+  const writer = UnixFS.createWriter({ writable, settings });
+  return { readable, writable, writer };
+};
 
 /**
  * @param {object} options
  * @param {import('@ipld/unixfs').View} options.writer
  */
-export const createDirectoryWriter = (options) => new DirectoryWriter(options)
+export const createDirectoryWriter = (options) => new DirectoryWriter(options);
 
 export class FileWriter {
   /**
@@ -50,19 +48,19 @@ export class FileWriter {
    * @param {import('@ipld/unixfs').View} options.writer
    */
   constructor({ writer }) {
-    this.writer = UnixFS.createFileWriter(writer)
+    this.writer = UnixFS.createFileWriter(writer);
   }
   /**
    * @param {Uint8Array} chunk
    */
   write(chunk) {
-    return this.writer.write(chunk)
+    return this.writer.write(chunk);
   }
   close() {
     if (this.result) {
-      return this.result
+      return this.result;
     } else {
-      return (this.result = this.writer.close())
+      return (this.result = this.writer.close());
     }
   }
 }
@@ -73,9 +71,9 @@ class DirectoryWriter {
    * @param {import('@ipld/unixfs').View} options.writer
    */
   constructor({ writer }) {
-    this.writer = writer
+    this.writer = writer;
     /** @type {Map<string, DirectoryWriter|FileWriter>} */
-    this.entries = new Map()
+    this.entries = new Map();
   }
 
   /**
@@ -83,15 +81,16 @@ class DirectoryWriter {
    */
   createDirectory(path) {
     /** @type {DirectoryWriter} */
-    let directory = this
-    const at = []
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
+    let directory = this;
+    const at = [];
     for (const name of path.split('/')) {
       if (name !== '' && name !== '.') {
-        at.push(name)
-        let writer = directory.entries.get(name)
+        at.push(name);
+        let writer = directory.entries.get(name);
         if (writer == null) {
-          writer = new DirectoryWriter(this)
-          directory.entries.set(name, writer)
+          writer = new DirectoryWriter(this);
+          directory.entries.set(name, writer);
         }
 
         if (!(writer instanceof DirectoryWriter)) {
@@ -99,46 +98,46 @@ class DirectoryWriter {
             `Can not create directory at ${at.join(
               '/'
             )}, because there is a file with the same name`
-          )
+          );
         }
 
-        directory = writer
+        directory = writer;
       }
     }
-    return directory
+    return directory;
   }
 
   /**
    * @param {string} path
    */
   createFile(path) {
-    const parts = path.split('/')
-    const name = /** @type {string} */ (parts.pop())
-    let directory = this.createDirectory(parts.join('/'))
+    const parts = path.split('/');
+    const name = /** @type {string} */ (parts.pop());
+    let directory = this.createDirectory(parts.join('/'));
 
     if (directory.entries.has(name)) {
       throw new Error(
         `Can not create a file at "${path}" because there is already a file or directory with the same name"`
-      )
+      );
     }
 
-    const writer = new FileWriter(this)
-    directory.entries.set(name, writer)
-    return writer
+    const writer = new FileWriter(this);
+    directory.entries.set(name, writer);
+    return writer;
   }
 
   async close() {
     const writer =
       this.entries.size <= SHARD_THRESHOLD
         ? UnixFS.createDirectoryWriter(this.writer)
-        : UnixFS.createShardedDirectoryWriter(this.writer)
+        : UnixFS.createShardedDirectoryWriter(this.writer);
 
     const promises = [...this.entries].map(async ([name, entry]) => {
-      const link = await entry.close()
-      writer.set(name, link)
-    })
+      const link = await entry.close();
+      writer.set(name, link);
+    });
 
-    await Promise.all(promises)
-    return await writer.close()
+    await Promise.all(promises);
+    return await writer.close();
   }
 }
