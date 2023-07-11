@@ -24,7 +24,7 @@ app.use(apiKeyValidator());
 app.post(
   '/ipfs/upload',
   handler(async (req, res) => {
-    // console.log(req.url, req.headers, req.ip, req.method, req.body);
+    console.log(req.url, req.headers, req.ip, req.method, req.body);
 
     // Save the API key in advance to store in database
     const apiKey: string | undefined = res.locals.apiKey;
