@@ -65,24 +65,37 @@ export const apiKeyValidator = () => {
       // validate domains
       if (authKeyData?.domains) {
         const origin = req.headers['Origin'];
-        let originHost = '';
+        let domain = '';
 
         if (origin) {
           try {
             const originUrl = new URL(origin as string);
-            originHost = originUrl.host;
+            domain = originUrl.hostname;
           } catch (error) {
             // ignore, will be verified by domains
           }
         }
 
         if (
-          // find matching domain, or if all domains allowed
-          !authKeyData.domains.find((d) => d === '*' || originHost === d)
+          !authKeyData.domains.find((d) => {
+            if (d === '*') {
+              return true;
+            }
+
+            // If the allowedDomain has a wildcard,
+            // we'll check that the ending of our domain matches the wildcard
+            if (d.startsWith('*.')) {
+              const wildcard = d.slice(2);
+              return domain.endsWith(wildcard);
+            }
+
+            // If there's no wildcard, we'll check for an exact match
+            return d === domain;
+          })
         ) {
           res.status(403).json({
             authorized: false,
-            errorMessage: `The domain ${originHost} is not authorized for this key.`,
+            errorMessage: `The domain ${domain} is not authorized for this key.`,
             errorCode: 'DOMAIN_UNAUTHORIZED',
           });
           return;
