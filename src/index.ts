@@ -1,3 +1,4 @@
+import { apiKeyValidator } from './middleware/apiKeyValidator';
 import { getEnv } from './loadEnv';
 import httpProxy from 'http-proxy';
 import express from 'express';
@@ -15,7 +16,7 @@ app.use(
   })
 );
 
-// TODO: Validate API key and extract user
+app.use(apiKeyValidator());
 
 app.post('/ipfs/upload', async (req, res) => {
   console.log(req.url, req.headers, req.ip, req.method, req.body);
