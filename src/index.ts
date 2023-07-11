@@ -1,16 +1,17 @@
 import { apiKeyValidator } from './middleware/apiKeyValidator';
+import { errorHandler } from './middleware/error';
 import { handler } from './utils/handler';
-import { getEnv } from './loadEnv';
+import { getEnv, requireEnv } from './utils/env';
 import httpProxy from 'http-proxy';
 import express from 'express';
 import cors from 'cors';
-import { errorHandler } from './middleware/error';
+import { prisma } from './utils/prisma';
 
 const app = express();
 const proxy = httpProxy.createProxyServer({
   secure: false,
 });
-const port = Number(getEnv('PORT')) || 3000;
+const port = Number(getEnv('PORT') || 3000);
 
 app.use(
   cors({
@@ -23,17 +24,30 @@ app.use(apiKeyValidator());
 app.post(
   '/ipfs/upload',
   handler(async (req, res) => {
-    console.log(req.url, req.headers, req.ip, req.method, req.body);
+    // console.log(req.url, req.headers, req.ip, req.method, req.body);
+
+    // Save the API key in advance to store in database
+    const apiKey: string | undefined = res.locals.apiKey;
 
     proxy.on('proxyRes', (proxyRes) => {
       const bodyChunks: any[] = [];
-      proxyRes.on('data', function (chunk) {
+      proxyRes.on('data', (chunk) => {
         bodyChunks.push(chunk);
       });
-      proxyRes.on('end', function () {
+
+      proxyRes.on('end', async () => {
         const body = JSON.parse(Buffer.concat(bodyChunks).toString());
-        const cid = body.IpfsHash;
-        console.log('CID:', cid);
+        const cid = body.IpfsHash as string;
+
+        if (cid) {
+          await prisma.uploads.create({
+            data: {
+              cid,
+              // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+              apiKey: apiKey || '',
+            },
+          });
+        }
       });
     });
 
@@ -42,8 +56,8 @@ app.post(
 
     // Set authorization headers for pinata request
     req.headers.authorization = '';
-    req.headers.pinata_api_key = getEnv('PINATA_API_KEY');
-    req.headers.pinata_secret_key = getEnv('PINATA_SECRET_KEY');
+    req.headers.pinata_api_key = requireEnv('PINATA_API_KEY');
+    req.headers.pinata_secret_api_key = requireEnv('PINATA_SECRET_API_KEY');
 
     proxy.web(req, res, {
       target: 'https://api.pinata.cloud',

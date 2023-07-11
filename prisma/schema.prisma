@@ -10,13 +10,12 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-model Upload {
+model Uploads {
   id                String       @id @default(uuid())
   createdAt         DateTime     @default(now())
   updatedAt         DateTime     @updatedAt
   cid               String
   apiKey            String
-  walletAddress     String
   isScanned         Boolean      @default(false)
   bannedAt          DateTime?
 }

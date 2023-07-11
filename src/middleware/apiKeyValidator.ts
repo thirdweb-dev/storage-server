@@ -1,10 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
-import axios, { AxiosResponse } from 'axios';
-import { getEnv } from '../loadEnv';
+import { requireEnv } from '../utils/env';
 
 interface ValidationResponse {
   authorized: boolean;
-  apiKeyCreatorWalletAddress: string;
   data: ApiKey;
   error: {
     message: string;
@@ -35,28 +33,34 @@ export const apiKeyValidator = () => {
     res: Response,
     next: NextFunction
   ): Promise<void> => {
-    const authKey = req.headers.authorization;
+    if (!req.headers.authorization) {
+      next();
+      return;
+    }
+
     try {
-      const response: AxiosResponse<ValidationResponse> = await axios.post(
-        `${getEnv('THIRDWEB_API_ORIGIN')}/v1/keys/use`,
+      const response = await fetch(
+        `${requireEnv('THIRDWEB_API_ORIGIN')}/v1/keys/use`,
         {
-          scope,
-        },
-        {
+          method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            Authorization: `Bearer ${authKey}`,
+            Authorization: req.headers.authorization || '',
           },
+          body: JSON.stringify({
+            scope,
+          }),
         }
       );
-      if (response.data.error) {
-        res
-          .status(response.data.error.statusCode)
-          .json({ message: response.data.error.message });
+
+      const data = (await response.json()) as ValidationResponse;
+
+      if (!response.ok) {
+        res.status(data.error.statusCode).json({ message: data.error.message });
         return;
       }
 
-      const authKeyData = response.data.data;
+      const authKeyData = data.data;
 
       // validate domains
       if (authKeyData?.domains) {
@@ -116,6 +120,8 @@ export const apiKeyValidator = () => {
         });
         return;
       }
+
+      res.locals.apiKey = authKeyData.key;
       next();
     } catch (error: any) {
       // TODO: Add alerting here
@@ -123,7 +129,12 @@ export const apiKeyValidator = () => {
       console.error(
         'The API verification server may be down. The client will be permitted to continue.'
       );
-      next();
+      res.status(403).json({
+        authorized: false,
+        errorMessage: `API verification server may be down.`,
+        errorCode: 'INTERNAL_ERROR',
+      });
+      return;
     }
   };
 };
