@@ -1,8 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import axios, { AxiosResponse } from 'axios';
 import { getEnv } from '../loadEnv';
-import { ThirdwebRequest } from './context';
-import { CREATOR_WALLET_ADDRESS_WHILE_API_SERVER_IS_DOWN } from '../constants/apiKeys';
 
 interface ValidationResponse {
   authorized: boolean;
@@ -13,24 +11,40 @@ interface ValidationResponse {
   };
 }
 
+type ApiKey = {
+  id: string;
+  key: string;
+  walletAddresses: string[];
+  domains: string[];
+  services?: [
+    {
+      name: string;
+      targetAddresses: string[];
+      actions: string[];
+    },
+  ];
+};
+
+const scope = "storage";
+const scopeAction = "write";
+
 export const apiKeyValidator = () => {
   return async (
     req: Request,
     res: Response,
     next: NextFunction
   ): Promise<void> => {
-    const key = req.get('x-api-key');
-    const thirdwebRequest = req as ThirdwebRequest;
+    const authKey = req.headers.authorization;
     try {
       const response: AxiosResponse<ValidationResponse> = await axios.post(
         `${getEnv('THIRDWEB_API_ORIGIN')}/v1/keys/use`,
         {
-          scope: 'storage.upload',
+          scope,
         },
         {
           headers: {
             'Content-Type': 'application/json',
-            'x-api-key': key,
+            'Authorization': `Bearer ${authKey}`,
           },
         }
       );
@@ -40,13 +54,69 @@ export const apiKeyValidator = () => {
           .json({ message: response.data.error.message });
         return;
       }
-      thirdwebRequest.context.apiKeyCreatorWalletAddress =
-        response.data.apiKeyCreatorWalletAddress;
+
+      const authKeyData : ApiKey = response.data;
+  
+      // validate domains
+      if (authKeyData?.domains) {
+        const origin = req.headers["Origin"];
+        let originHost = "";
+  
+        if (origin) {
+          try {
+            const originUrl = new URL(origin);
+            originHost = originUrl.host;
+          } catch (error) {
+            // ignore, will be verified by domains
+          }
+        }
+  
+        if (
+          // find matching domain, or if all domains allowed
+          !authKeyData.domains.find((d) => d === "*" || originHost === d)
+        ) {
+          res.status(403).json({
+            authorized: false,
+            errorMessage: `The domain ${originHost} is not authorized for this key.`,
+            errorCode: "DOMAIN_UNAUTHORIZED",
+          });
+          return;
+        }
+      }
+  
+      // validate services
+      const service = (authKeyData?.services || []).find(
+        (srv) => srv.name.toLowerCase() === scope.toLowerCase()
+      );
+  
+      if (!service) {
+        res.status(403).json({
+          authorized: false,
+          errorMessage: `The scope "${scope}" is not authorized for this key.`,
+          errorCode: "SERVICE_UNAUTHORIZED",
+        });
+        return;
+      }
+  
+      const serviceAction = (authKeyData?.services || []).find((srv) => {
+        if (srv.name.toLowerCase() === scope.toLowerCase()) {
+          if (srv?.actions.includes(scopeAction)) {
+            return true;
+          }
+        }
+        return false;
+      });
+  
+      if (!serviceAction) {
+        res.status(403).json({
+          authorized: false,
+          errorMessage: `The Scope: "${scope}", Action : "${scopeAction}" is not authorized for this key.`,
+          errorCode: "SERVICE_UNAUTHORIZED",
+        });
+        return;
+      }
       next();
     } catch (error: any) {
-      thirdwebRequest.context.apiKeyCreatorWalletAddress =
-        CREATOR_WALLET_ADDRESS_WHILE_API_SERVER_IS_DOWN;
-
       // TODO: Add alerting here
       console.error(`Error while validating API key: ${error}`);
       console.error(
