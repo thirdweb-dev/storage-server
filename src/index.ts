@@ -1,7 +1,6 @@
 import './loadEnv';
 import 'reflect-metadata';
 import express from 'express';
-import dataSource from './ormconfig';
 import busboy from 'busboy';
 import nodeStream from 'node:stream';
 import events from 'node:events';
@@ -12,6 +11,7 @@ import { importDAG } from '@ucanto/core/delegation';
 import { Block } from '@ipld/car/reader';
 import PQueue from 'p-queue';
 import cors from 'cors';
+import { PrismaClient } from '@prisma/client';
 
 // This import is from a file that was intentionally not ported to TypeScript. See w3up-client-patches/README.md.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
@@ -32,11 +32,12 @@ import {
 import * as UnixFS from './w3up-client-patches/upload-client-unixfs';
 import { getEnv } from './loadEnv';
 import apiKeyValidator from './middleware/apiKeyValidator';
-import { UploadEntity } from './entities/UploadEntity';
 import { AnyLink } from '@web3-storage/upload-client/dist/src/types';
 import { thirdwebContext, ThirdwebRequest } from './middleware/context';
 
 events.setMaxListeners(1000);
+
+const prisma = new PrismaClient();
 
 const app = express();
 const port = Number(getEnv('PORT')) || 3000;
@@ -57,10 +58,13 @@ async function trackUpload(args: {
   cid: AnyLink;
   apiKeyCreatorWalletAddress: string;
 }) {
-  const upload = new UploadEntity();
-  upload.cid = args.cid.toString();
-  upload.apiKeyCreatorWalletAddress = args.apiKeyCreatorWalletAddress;
-  await dataSource.manager.save(upload);
+  const { cid, apiKeyCreatorWalletAddress } = args;
+  await prisma.upload.create({
+    data: {
+      cid: cid.toString(),
+      apiKeyCreatorWalletAddress,
+    },
+  });
 }
 
 app.post('/ipfs/upload', async (req, res) => {
@@ -196,13 +200,15 @@ app.post('/ipfs/upload', async (req, res) => {
   }
 });
 
-dataSource.initialize().then(async () => {
+const main = async () => {
   const server = app.listen(port, async () => {
     await initW3UpClient();
     console.log(`Server listening on port ${port}`);
   });
   server.setTimeout(360000000);
-});
+};
+
+main().catch((e) => console.error(e));
 
 async function initW3UpClient() {
   const principal = Signer.parse(getEnv('W3UP_KEY') as string);
