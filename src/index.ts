@@ -74,7 +74,7 @@ app.post('/ipfs/upload', async (req, res) => {
     const bb = busboy({ headers: req.headers, preservePath: true });
     const workQueue = new PQueue({ concurrency: 1 });
 
-    function abort(e: Error) {
+    const abort = async (e: Error) => {
       req.unpipe(bb);
       workQueue.pause();
       if (!req.aborted) {
@@ -82,9 +82,9 @@ app.post('/ipfs/upload', async (req, res) => {
         // TODO: Surface user errors as Bad Request, all other errors as Internal Server Error
         res.status(500).send(e.message);
       }
-    }
+    };
 
-    async function abortOnError(fn: any) {
+    const abortOnError = async (fn: any) => {
       workQueue.add(async () => {
         try {
           await fn();
@@ -93,7 +93,7 @@ app.post('/ipfs/upload', async (req, res) => {
           abort(e);
         }
       });
-    }
+    };
 
     // Store state data needed for directory uploads
     let directoryUploadState: any | undefined = undefined;
