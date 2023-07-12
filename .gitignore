@@ -1,5 +1,6 @@
 # macOS
 .DS_Store
+.env
 
 # Ignore node_modules directory
 node_modules/
